@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>ModifierTree</AssemblyName>
+    <TargetExt>.rhp</TargetExt>
+    <Version>0.15.2</Version>
+    <Title>Modifier Tree</Title>
+    <Description>Rhino 8 procedural modifier tree feasibility prototype.</Description>
+    <RhinoSystemDir Condition="'$(RhinoSystemDir)' == ''">C:\Program Files\Rhino 8\System</RhinoSystemDir>
+    <OutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\bin\$(Version)\$(Configuration)\</OutputPath>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ModifierTree.Core\ModifierTree.Core.csproj" />
+    <Reference Include="RhinoCommon">
+      <HintPath>$(RhinoSystemDir)\netcore\RhinoCommon.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Eto">
+      <HintPath>$(RhinoSystemDir)\Eto.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Eto UI is used; disable the SDK's implicit WinForms namespaces. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+  <Target Name="CheckRhinoSdk" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(RhinoSystemDir)\netcore\RhinoCommon.dll')" Text="Rhino 8 SDK not found. Set -p:RhinoSystemDir to the Rhino System directory." />
+  </Target>
+</Project>

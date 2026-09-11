@@ -1,0 +1,14 @@
+if (args.Length != 1) throw new ArgumentException("Pass the built .rhp path to verify plugin metadata.");
+PluginMetadataChecks.Verify(args[0]);
+RebuildGateChecks.Verify();
+ModifierTreeChecks.Verify();
+SubtreeChecks.Verify();
+TreeEditScopeChecks.Verify();
+TreeStateCodecChecks.Verify();
+ModifierNamesAndMergeChecks.Verify();
+BatchMoveChecks.Verify();
+BooleanKindsChecks.Verify();
+ModifierOptionsChecks.Verify();
+ControlPlaneAxesChecks.Verify();
+BendModelChecks.Verify();
+Console.WriteLine("All plugin metadata, scheduling, tree and state codec checks passed. Mouse drag-and-drop still needs Rhino UI verification.");

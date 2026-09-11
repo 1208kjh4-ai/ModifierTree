@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{CE0E2858-186A-4A7F-8CF3-FC9878EBFBF3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModifierTree.Core", "src\ModifierTree.Core\ModifierTree.Core.csproj", "{7A952D94-32A0-4A8C-B7F7-475546D4C343}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModifierTree.Rhino", "src\ModifierTree.Rhino\ModifierTree.Rhino.csproj", "{3AC74586-3C55-4FD4-B413-54618C951ADB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{A6316DA0-BCF5-4736-94EE-D4ADB76352C2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModifierTree.Core.Checks", "tests\ModifierTree.Core.Checks\ModifierTree.Core.Checks.csproj", "{2B77ABC4-63A5-4C11-B488-78540D156453}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModifierTree.Rhino.Checks", "tests\ModifierTree.Rhino.Checks\ModifierTree.Rhino.Checks.csproj", "{66FA8EC6-BE93-4796-9451-A7257A40A7E4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7A952D94-32A0-4A8C-B7F7-475546D4C343}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A952D94-32A0-4A8C-B7F7-475546D4C343}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A952D94-32A0-4A8C-B7F7-475546D4C343}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A952D94-32A0-4A8C-B7F7-475546D4C343}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3AC74586-3C55-4FD4-B413-54618C951ADB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3AC74586-3C55-4FD4-B413-54618C951ADB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3AC74586-3C55-4FD4-B413-54618C951ADB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3AC74586-3C55-4FD4-B413-54618C951ADB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B77ABC4-63A5-4C11-B488-78540D156453}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B77ABC4-63A5-4C11-B488-78540D156453}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B77ABC4-63A5-4C11-B488-78540D156453}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B77ABC4-63A5-4C11-B488-78540D156453}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66FA8EC6-BE93-4796-9451-A7257A40A7E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66FA8EC6-BE93-4796-9451-A7257A40A7E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66FA8EC6-BE93-4796-9451-A7257A40A7E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66FA8EC6-BE93-4796-9451-A7257A40A7E4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7A952D94-32A0-4A8C-B7F7-475546D4C343} = {CE0E2858-186A-4A7F-8CF3-FC9878EBFBF3}
+		{3AC74586-3C55-4FD4-B413-54618C951ADB} = {CE0E2858-186A-4A7F-8CF3-FC9878EBFBF3}
+		{2B77ABC4-63A5-4C11-B488-78540D156453} = {A6316DA0-BCF5-4736-94EE-D4ADB76352C2}
+		{66FA8EC6-BE93-4796-9451-A7257A40A7E4} = {A6316DA0-BCF5-4736-94EE-D4ADB76352C2}
+	EndGlobalSection
+EndGlobal
