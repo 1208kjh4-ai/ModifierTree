@@ -116,7 +116,13 @@ public sealed class ModifierManagerPanel : Panel
         _tree.Columns.Add(new GridColumn { HeaderText = "Name", DataCell = new TextBoxCell(0), Editable = false, AutoSize = false, Width = 140, MinWidth = 1 });
         _tree.Columns.Add(new GridColumn { HeaderText = "State", HeaderToolTip = "Double-click a Modifier state to turn its operation ON or OFF.", DataCell = new TextBoxCell(1), AutoSize = false, Width = 70, MinWidth = 1 });
         _tree.Columns.Add(new GridColumn { HeaderText = "InputWire", HeaderToolTip = "Double-click to toggle input wires. Selection temporarily reveals edges.", DataCell = new TextBoxCell(2), AutoSize = false, Width = 65, MinWidth = 1 });
-        _tree.SelectionChanged += (_, _) => { if (!_refreshingTree) UpdateSelection(selectInViewport: true); };
+        _tree.SelectionChanged += (_, _) =>
+        {
+            if (_refreshingTree) return;
+            var current = SelectedRows.Select(row => row.Key).ToArray();
+            if (SelectionInteractionPolicy.PanelSelectionChanged(_panelSelection, current))
+                UpdateSelection(selectInViewport: true);
+        };
         _tree.CellFormatting += (_, e) => { if (e.Item is NodeRow { IsDisabled: true }) e.ForegroundColor = Colors.Gray; };
         _tree.MouseDown += BeginPossibleDrag;
         _tree.MouseMove += StartDrag;

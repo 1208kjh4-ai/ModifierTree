@@ -38,7 +38,7 @@ internal static class BendEvaluator
                 var radians = control.Settings.Strength * Math.PI / 180;
                 var localTransform = Transform.PlaneToPlane(frame, Plane.WorldXY);
                 var bounds = results.Select(result => result.GetBoundingBox(localTransform)).ToArray();
-                ValidateBounds(bounds, box.Y.Length, radians, control.Settings.Limited, tolerance);
+                ValidateBounds(results, bounds, frame, box.Y.Length, radians, control.Settings.Limited, tolerance);
                 var morph = new LengthPreservingBend(frame, box.Y.Length, radians,
                     control.Settings.Limited, tolerance / 10);
                 foreach (var result in results)
@@ -57,18 +57,23 @@ internal static class BendEvaluator
         }
     }
 
-    private static void ValidateBounds(BoundingBox[] bounds, double height, double radians, bool limited, double tolerance)
+    private static void ValidateBounds(IReadOnlyList<Brep> inputs, BoundingBox[] bounds, Plane frame,
+        double height, double radians, bool limited, double tolerance)
     {
         if (bounds.Any(bound => !bound.IsValid)) throw new InvalidOperationException("Cannot determine the Bend input bounds.");
         if (bounds.Length == 0) return;
         var curvature = radians / height;
-        foreach (var bound in bounds)
+        for (var i = 0; i < bounds.Length; i++)
         {
+            var bound = bounds[i];
             // Limited's exterior regions are rigid transforms; there is no radial collapse there.
             if (limited && (bound.Max.Y <= 0 || bound.Min.Y >= height)) continue;
-            var extremeX = curvature > 0 ? bound.Max.X : bound.Min.X;
-            var determinant = 1 - curvature * extremeX;
-            if (determinant <= 1e-8 || determinant / Math.Abs(curvature) <= tolerance)
+            // A safe whole-object bound also proves every subset safe. Only refine a
+            // potentially unsafe Limited input that extends outside the bending interval.
+            if (!ReachesCurvatureCenter(bound, curvature, tolerance)) continue;
+            if (!limited || (bound.Min.Y >= 0 && bound.Max.Y <= height) ||
+                BendRegionBounds.WithinInterval(inputs[i], frame, height, tolerance)
+                    .Any(part => ReachesCurvatureCenter(part, curvature, tolerance)))
                 throw new InvalidOperationException("Bend reaches the curvature center and would collapse or invert the input. Reduce Strength or increase the Control Box height.");
         }
         var ymin = bounds.Min(bound => bound.Min.Y);
@@ -76,5 +81,12 @@ internal static class BendEvaluator
         var span = limited ? Math.Clamp(ymax, 0, height) - Math.Clamp(ymin, 0, height) : ymax - ymin;
         if (Math.Abs(curvature) * span >= 2 * Math.PI - 1e-8)
             throw new InvalidOperationException("Bend would wrap the inputs through a full turn. Reduce Strength or increase the Control Box height.");
+    }
+
+    private static bool ReachesCurvatureCenter(BoundingBox bound, double curvature, double tolerance)
+    {
+        var extremeX = curvature > 0 ? bound.Max.X : bound.Min.X;
+        var determinant = 1 - curvature * extremeX;
+        return determinant <= 1e-8 || determinant / Math.Abs(curvature) <= tolerance;
     }
 }

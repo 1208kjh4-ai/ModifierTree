@@ -126,6 +126,41 @@ internal static class BendGeometryChecks
 
     private static void SafetyBounds()
     {
+        var rotatedFrame = new Plane(new Point3d(23, -17, 9),
+            new Vector3d(Math.Cos(0.61), Math.Sin(0.61), 0),
+            new Vector3d(-Math.Sin(0.61), Math.Cos(0.61), 0));
+        foreach (var (strength, frame, wingStart, wingEnd, label) in new[]
+        {
+            (90.0, Plane.WorldXY, 115.0, 135.0, "positive world upper"),
+            (-90.0, rotatedFrame, -35.0, -15.0, "negative rotated lower")
+        })
+        {
+            var box = new Box(frame, new Interval(-10, 10), new Interval(0, 100), new Interval(-10, 10));
+            using var outsideWing = WingedSource(frame, Math.Sign(strength), -40, wingStart, wingEnd, 140);
+            var crc = outsideWing.DataCRC(0);
+            var limited = BendEvaluator.Evaluate([[outsideWing]],
+                [new BendControl(box, new ControlBoxSettings(strength))], Tolerance);
+            try
+            {
+                Check(limited is [{ IsValid: true, IsSolid: true }] &&
+                    limited[0].Edges.All(edge => edge.Valence != EdgeAdjacency.Naked) &&
+                    outsideWing.DataCRC(0) == crc,
+                    $"Limited Bend ignores a wide {label} wing wholly beyond its active Y slab and preserves the source");
+            }
+            finally { Dispose(limited); }
+            Check(Fails(() => BendEvaluator.Evaluate([[outsideWing]],
+                    [new BendControl(box, new ControlBoxSettings(strength, false))], Tolerance), "curvature center") &&
+                outsideWing.DataCRC(0) == crc,
+                $"Unlimited Bend still rejects the same wide {label} wing because every Y position is active");
+
+            using var activeWing = WingedSource(frame, Math.Sign(strength), -40, 40, 60, 140);
+            var activeCrc = activeWing.DataCRC(0);
+            Check(Fails(() => BendEvaluator.Evaluate([[activeWing]],
+                    [new BendControl(box, new ControlBoxSettings(strength))], Tolerance), "curvature center") &&
+                activeWing.DataCRC(0) == activeCrc,
+                $"Limited Bend still rejects a true {label} collapse inside its active Y slab");
+        }
+
         using var outsideDisplayWidth = new BoundingBox(90, 10, -3, 120, 90, 3).ToBrep();
         Check(Fails(() => BendEvaluator.Evaluate([[outsideDisplayWidth]],
             [new BendControl(DefaultBox, new ControlBoxSettings(90))], Tolerance), "curvature center"),
@@ -250,6 +285,34 @@ internal static class BendGeometryChecks
 
     private static BoundingBox SourceBounds(double z = 0) => new(-4, 0, z - 5, 4, 100, z + 5);
     private static Brep Source(double z = 0) => SourceBounds(z).ToBrep();
+    private static Brep WingedSource(Plane frame, int side, double stemStart,
+        double wingStart, double wingEnd, double stemEnd)
+    {
+        const double stemHalfWidth = 3;
+        const double wingExtent = 100;
+        var points = new[]
+        {
+            new Point3d(-stemHalfWidth, stemStart, -3), new Point3d(stemHalfWidth, stemStart, -3),
+            new Point3d(stemHalfWidth, wingStart, -3), new Point3d(wingExtent, wingStart, -3),
+            new Point3d(wingExtent, wingEnd, -3), new Point3d(stemHalfWidth, wingEnd, -3),
+            new Point3d(stemHalfWidth, stemEnd, -3), new Point3d(-stemHalfWidth, stemEnd, -3),
+            new Point3d(-stemHalfWidth, stemStart, -3)
+        };
+        if (side < 0)
+            points = points.Select(point => new Point3d(-point.X, point.Y, point.Z)).Reverse().ToArray();
+        using var profile = new PolylineCurve(points);
+        using var extrusion = Extrusion.Create(profile, 6, true)
+            ?? throw new InvalidOperationException("Could not create the winged Bend safety fixture.");
+        var source = extrusion.ToBrep();
+        var toFrame = Transform.PlaneToPlane(Plane.WorldXY, frame);
+        if (!source.Transform(toFrame) || !source.IsValid || !source.IsSolid ||
+            source.Edges.Any(edge => edge.Valence == EdgeAdjacency.Naked))
+        {
+            source.Dispose();
+            throw new InvalidOperationException("Could not create a closed winged Bend safety fixture.");
+        }
+        return source;
+    }
     private static BoundingBox Bounds(NodeEvaluation result)
     { var box = BoundingBox.Empty; foreach (var brep in result.Results) box.Union(brep.GetBoundingBox(true)); return box; }
     private static bool Fails(Func<Brep[]> evaluate, string message)

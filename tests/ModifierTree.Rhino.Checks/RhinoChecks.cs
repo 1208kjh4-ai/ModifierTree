@@ -33,6 +33,7 @@ internal static class RhinoChecks
         ResultCommitChecks.Run();
         SubtreeTransformChecks.Run();
         ViewportSelectionChecks.Run();
+        SelectionInteractionChecks.Run();
         PreviewAppearanceChecks.Run();
         SourceNameEditorChecks.Run();
         DocumentSnapshotChecks();

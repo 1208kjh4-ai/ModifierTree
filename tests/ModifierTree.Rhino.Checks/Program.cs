@@ -38,6 +38,7 @@ internal static class Program
     private static int RunUiChecks()
     {
         Console.WriteLine("Checking Eto/WPF controls without starting RhinoCore or opening a window...");
+        SelectionInteractionChecks.Run();
         ManagerLayoutChecks.Run();
         Console.WriteLine("All Eto/WPF layout and property input checks passed.");
         return 0;

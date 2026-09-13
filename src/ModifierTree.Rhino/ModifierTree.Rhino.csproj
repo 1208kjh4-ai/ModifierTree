@@ -4,7 +4,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>ModifierTree</AssemblyName>
     <TargetExt>.rhp</TargetExt>
-    <Version>0.15.2</Version>
+    <Version>0.15.4</Version>
     <Title>Modifier Tree</Title>
     <Description>Rhino 8 procedural modifier tree feasibility prototype.</Description>
     <RhinoSystemDir Condition="'$(RhinoSystemDir)' == ''">C:\Program Files\Rhino 8\System</RhinoSystemDir>

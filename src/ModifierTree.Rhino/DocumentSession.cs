@@ -38,6 +38,8 @@ internal sealed class DocumentSession : IDisposable
     private HashSet<Guid> _nativeSelection = [];
     private bool _exitScopePending;
     private Guid? _gumballPendingNode;
+    private long _gumballPendingRevision = -1;
+    private long _gumballAttemptedRevision = -1;
     private readonly Eto.Forms.UITimer _liveTimer = new() { Interval = 0.016 };
     private bool _committedSourcesCurrent;
     private readonly Dictionary<Guid, Transform> _moveTransforms = [];
@@ -137,6 +139,7 @@ internal sealed class DocumentSession : IDisposable
             EditScope.Reset();
             _exitScopePending = false;
             _gumballPendingNode = null;
+            _gumballPendingRevision = -1;
         }
         RequestRebuild();
     }
@@ -144,6 +147,16 @@ internal sealed class DocumentSession : IDisposable
     public bool SelectInViewport(Guid nodeId)
     {
         if (!CanEditTree || Tree.Find(nodeId) is not { } node) return false;
+        var nativeSelectionMatches = NativeSelectionMatches(nodeId);
+        if (!SelectionInteractionPolicy.NeedsNativeReselection(nodeId, ViewportSelectedNodeId, nativeSelectionMatches))
+        {
+            // WPF can report SelectionChanged after a programmatic tree refresh. Re-selecting
+            // the same native objects tears down an active Gumball and queues another
+            // asynchronous _Gumball command.
+            SelectedNodeId = nodeId;
+            if (!Document.GetGumballPlane(out _)) RequestSelectionGumball(nodeId);
+            return true;
+        }
         if (PreviewEnabled)
         {
             RevealSelectionLevel(nodeId);
@@ -162,7 +175,7 @@ internal sealed class DocumentSession : IDisposable
         { RhinoApp.WriteLine(error); return false; }
         SelectedNodeId = ViewportSelectedNodeId = nodeId;
         ViewportSelectionRevision++;
-        _gumballPendingNode = nodeId;
+        RequestSelectionGumball(nodeId);
         RememberSelection();
         RequestRefresh();
         Document.Views.Redraw();
@@ -171,11 +184,39 @@ internal sealed class DocumentSession : IDisposable
 
     private void RememberSelection() => _nativeSelection = Document.Objects.GetSelectedObjects(false, false).Select(obj => obj.Id).ToHashSet();
 
+    private bool NativeSelectionMatches(Guid nodeId)
+    {
+        if (ViewportSelectedNodeId != nodeId || Tree.Find(nodeId) is not { } node) return false;
+        HashSet<Guid> expected;
+        if (PreviewEnabled && node.IsModifier)
+        {
+            if (Working.ObjectForNode(nodeId) is not { } proxy) return false;
+            expected = [proxy];
+        }
+        else expected = Tree.SourcesInSubtree(nodeId).ToHashSet();
+        if (expected.Count == 0) return false;
+        var selected = Document.Objects.GetSelectedObjects(false, false).ToArray();
+        return selected.All(obj => obj.IsSelected(false) == 2) && selected.Select(obj => obj.Id).ToHashSet().SetEquals(expected);
+    }
+
+    internal bool PreserveCurrentGumballMouseDown(Guid pickedNodeId) =>
+        SelectionInteractionPolicy.PreserveNativeMouseDown(pickedNodeId, ViewportSelectedNodeId,
+            NativeSelectionMatches(pickedNodeId), Document.GetGumballPlane(out _),
+            Tree.Find(pickedNodeId)?.Kind != TreeNodeKind.ControlBox);
+
+    private void RequestSelectionGumball(Guid nodeId)
+    {
+        if (!SelectionInteractionPolicy.CanRequestGumball(ViewportSelectionRevision, _gumballAttemptedRevision)) return;
+        _gumballPendingNode = nodeId;
+        _gumballPendingRevision = ViewportSelectionRevision;
+    }
+
     public void ClearViewportSelection()
     {
         Working.ClearPendingSelection();
         ViewportSelectionRevision++;
         _gumballPendingNode = null;
+        _gumballPendingRevision = -1;
         Document.Objects.UnselectAll();
         SelectedNodeId = ViewportSelectedNodeId = null;
         RememberSelection();
@@ -188,6 +229,7 @@ internal sealed class DocumentSession : IDisposable
         Working.ClearPendingSelection();
         ViewportSelectionRevision++;
         _gumballPendingNode = null;
+        _gumballPendingRevision = -1;
         Document.Objects.UnselectAll();
         ViewportSelectedNodeId = null;
         SelectedNodeId = EditScope.ParentId;
@@ -720,13 +762,25 @@ internal sealed class DocumentSession : IDisposable
         // A cancelled mouse callback bypasses Rhino's normal post-pick UI update.
         // Finish mouse handling before asking Rhino to activate its native widget.
         if (System.Windows.Forms.Control.MouseButtons != System.Windows.Forms.MouseButtons.None) return;
+        var revision = _gumballPendingRevision;
         _gumballPendingNode = null;
-        if (!IsOurDocument(RhinoDoc.ActiveDoc) || ViewportSelectedNodeId != nodeId ||
-            _nativeSelection.Count == 0 || !_nativeSelection.SetEquals(Working.ObjectForNode(nodeId) is { } proxy ? [proxy] : Tree.SourcesInSubtree(nodeId))) return;
+        _gumballPendingRevision = -1;
+        if (!SelectionInteractionPolicy.CanActivateGumball(revision, ViewportSelectionRevision, _gumballAttemptedRevision) ||
+            !IsOurDocument(RhinoDoc.ActiveDoc) || !NativeSelectionMatches(nodeId)) return;
         // Explicit On (never Toggle/Reset) also handles a previously disabled gumball
-        // while preserving its alignment and relocation settings. Run once per pick.
-        if (!RhinoApp.RunScript(Document.RuntimeSerialNumber, "_Gumball _On", false))
-            RhinoApp.WriteLine("Modifier Tree: could not activate Gumball. Run Gumball On to enable it.");
+        // while preserving its alignment and relocation settings. RunScript queues work
+        // outside commands, so record the attempt before calling it and never queue the
+        // same selection revision again.
+        _gumballAttemptedRevision = revision;
+        try
+        {
+            if (!RhinoApp.RunScript(Document.RuntimeSerialNumber, "_Gumball _On", false))
+                RhinoApp.WriteLine("Modifier Tree: could not activate Gumball. Run Gumball On to enable it.");
+        }
+        catch (ApplicationException)
+        {
+            RhinoApp.WriteLine("Modifier Tree: could not activate Gumball right now. Run Gumball On to enable it.");
+        }
         _redrawPending = true;
     }
 

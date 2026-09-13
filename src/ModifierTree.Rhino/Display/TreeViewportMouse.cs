@@ -27,6 +27,10 @@ internal sealed class TreeViewportMouse(DocumentSession session) : MouseCallback
             }
             return;
         }
+        // Rhino can briefly report no Gumball hit while a native handle is being pressed.
+        // Preserve the current valid selection so Rhino can start its own drag instead of
+        // having this callback cancel the click and recreate the Gumball.
+        if (session.PreserveCurrentGumballMouseDown(id)) return;
         e.Cancel = _handledDown = true;
         session.SelectInViewport(id);
     }

@@ -1,7 +1,7 @@
 # Modifier Tree — Rhino 8
 
 Rhino 객체를 GUID로 등록하고, 사용자가 직접 순서와 부모·자식 관계를 편집하는 C# Modifier Tree 플러그인입니다.
-현재 **0.15.2**는 **Modifier Manager에서 한 행을 선택하면 Rhino에서도 자동으로 선택하고 검볼을 활성화**합니다. Modifier는 전체 결과, 하위 객체·Control Box·BasePlane은 해당 항목을 선택합니다. Bend Control Box의 휘어진 윤곽선과 단면선, 박스별 Strength·Limited/Unlimited, 생성·Fit, 검볼 변형과 여러 박스의 연속 굽힘을 지원합니다. 최종 결과의 Rhino 선택·스냅·검볼, 원본 숨김, 이동 후 Undo의 결과 중복 방지, 기존 Boolean·Mirror·Array 및 Array Enter 입력도 유지합니다. 이름·설정·제어 객체 연결·트리를 `.3dm`에 저장하며, 기존 0.9.0~0.15.1 파일도 읽을 수 있습니다.
+현재 **0.15.4**는 Limited Bend의 안전 검사를 굽힘 구간의 형상으로 좁혀, 구간 밖의 넓은 가지 때문에 전체 객체를 거부하던 문제를 보완합니다. **Modifier Manager의 단일 행 선택과 검볼 활성화**, 같은 선택의 중복 요청 방지도 유지합니다. Modifier는 전체 결과, 하위 객체·Control Box·BasePlane은 해당 항목을 선택합니다. Bend Control Box의 휘어진 윤곽선과 단면선, 박스별 Strength·Limited/Unlimited, 생성·Fit, 검볼 변형과 여러 박스의 연속 굽힘을 지원합니다. 최종 결과의 Rhino 선택·스냅·검볼, 원본 숨김, 이동 후 Undo의 결과 중복 방지, 기존 Boolean·Mirror·Array 및 Array Enter 입력도 유지합니다. 이름·설정·제어 객체 연결·트리를 `.3dm`에 저장하며, 기존 0.9.0~0.15.3 파일도 읽을 수 있습니다.
 평소에는 최종 결과를 나타내는 작업용 Rhino Brep을 선택하고 스냅합니다. 이 결과를 Move·Rotate·Gumball로 조작하면 숨겨진 원본과 Array 축·BasePlane·Control Box도 함께 변환합니다. 내부 편집에 들어가면 그 단계의 입력만 노출합니다. 작업용 결과는 트리에서 다시 계산되며, 고정된 객체가 필요하면 Bake/Merge를 사용합니다.
 
 ## 개발 환경과 빌드
@@ -29,7 +29,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build.ps1 -Configu
 빌드 스크립트는 Core·이름·트리 교체·저장 상태·선택 범위·재계산 대기·플러그인 GUID 검사도 실행합니다. 출력 경로:
 
 ```text
-artifacts/bin/0.15.2/Release/net8.0-windows/ModifierTree.rhp
+artifacts/bin/0.15.4/Release/net8.0-windows/ModifierTree.rhp
 ```
 
 같은 폴더의 `ModifierTree.Core.dll` 등 동반 파일을 함께 유지해야 합니다.
@@ -39,7 +39,7 @@ Rhino 설치 위치가 다르면 빌드 인수에 `-RhinoSystemDir 'D:\Apps\Rhin
 ## 실행과 트리 편집
 
 1. 기존 작업을 저장하고 Rhino를 완전히 종료한 뒤 아래 설치 스크립트를 실행합니다. 이후 Rhino를 시작합니다. 기존 등록이 있으면 경로를 갱신하므로 `.rhp`를 다시 드래그하지 않습니다.
-2. `MTreeStatus`에서 버전 `0.15.2.0`을 확인하고 `MTree`로 패널을 엽니다.
+2. `MTreeStatus`에서 버전 `0.15.4.0`을 확인하고 `MTree`로 패널을 엽니다.
 3. **+ Add Object**로 원본 객체를 등록합니다. 객체는 최상위에 표시됩니다.
 4. **+ Add Modifier**에서 **Boolean Difference / Union / Intersection / Mirror / Array / Bend**를 선택합니다. Modifier가 최상위에 생성됩니다. Mirror에는 전용 BasePlane이 함께 만들어지며, 연산할 원본은 사용자가 넣습니다. Bend에는 입력을 넣고 **Add Control Box**로 제어 박스를 추가합니다.
 5. 원본 행을 Modifier 행 위로 드래그하여 자식으로 넣습니다. Difference는 **첫 번째 입력에서 나머지 입력들을 뺍니다**. Union은 모든 입력을 합치고, Intersection은 모든 입력에 공통인 부분을 남깁니다.
@@ -67,7 +67,7 @@ Modifier는 여러 개 생성할 수 있습니다. 중첩 시 자식 Modifier의
 
 **첫 행 클릭 → Shift를 누르고 마지막 행 클릭**으로 범위를 선택하고, 선택한 행 중 하나를 잡아 Modifier 위로 드래그하면 함께 들어갑니다. **Ctrl+클릭**으로 떨어진 행들을 추가·제외할 수도 있습니다. 선택한 순서에 관계없이 현재 트리의 위아래 순서를 유지합니다. 행 사이 재정렬, 다른 부모로 이동, 루트로 꺼내기에도 적용합니다.
 
-패널의 **단일 행 선택은 Select in Rhino와 같은 동작**입니다. Modifier 행은 결과 전체를, 원본·제어 객체 행은 해당 편집 단계의 객체를 선택하고 검볼 활성화를 요청합니다. 여러 행 선택은 기존 트리 편집용 배치를 유지하며 Rhino의 다중 객체 선택으로 전환하지 않습니다. 화면 갱신·Undo·뷰포트 선택을 패널에 반영할 때는 자동 선택을 재실행하지 않습니다. [패널 선택 확인 순서](MD/Panel_Selection_Smoke_Test.md).
+패널의 **단일 행 선택은 Select in Rhino와 같은 동작**입니다. Modifier 행은 결과 전체를, 원본·제어 객체 행은 해당 편집 단계의 객체를 선택하고 검볼 활성화를 요청합니다. 이미 같은 persistent 객체가 정확히 선택되어 있으면 네이티브 선택과 검볼을 그대로 유지합니다. 여러 행 선택은 기존 트리 편집용 배치를 유지하며 Rhino의 다중 객체 선택으로 전환하지 않습니다. 화면 갱신·Undo·뷰포트 선택을 패널에 반영할 때는 자동 선택을 재실행하지 않습니다. [0.15.3 검볼 수정 기록](MD/Gumball_Selection_Fix.md)과 [패널 선택 확인 순서](MD/Panel_Selection_Smoke_Test.md)를 참고합니다.
 
 부모와 자식을 함께 선택하면 부모를 기준으로 이동하여 내부 구조를 유지합니다. 이동할 수 없는 항목이 있으면 전체 드롭을 취소하며, 묶음 이동은 Undo 한 번으로 되돌립니다. 다중 선택은 트리 배치에 적용하고 이름 편집·Select in Rhino·MTreeMove·Remove·Bake/Merge 등은 한 행을 선택해 사용합니다. [0.11.0 다중 선택과 Boolean 확인 순서](MD/Multi_Select_Boolean_Smoke_Test.md)를 참고하세요.
 
@@ -97,6 +97,8 @@ ON/OFF는 **Show result** 및 **InputWire**와 별도 설정입니다. Show resu
 5. 박스를 더 추가하고 트리에서 순서를 바꿉니다. Control Box는 위에서 아래로 이전 결과에 순차 적용되며, 다른 Bend로도 옮길 수 있습니다. 루트나 다른 종류의 Modifier로 옮길 수는 없습니다.
 
 Limited는 로컬 Y 높이 구간을 굽히고 구간 밖을 끝단에 따라 직선으로 연결합니다. Unlimited는 높이 밖에도 같은 곡률을 적용합니다. X/Z 폭은 영향 범위를 잘라내지 않습니다. 별도 Angle·Within Box·Keep Y-Axis Length 토글은 없습니다. **길이 유지는 각 박스의 중립축 호길이 기준**이며 여러 박스 적용 후 임의 경로의 총길이까지 고정하는 뜻은 아닙니다.
+
+0.15.4의 Limited 안전 검사는 전체 형상의 폭이 위험할 때 검사용 복사본을 시작·끝 평면으로 잘라, 실제 굽힘 구간에 남는 부분만 다시 검사합니다. 좁은 통로와 넓은 교차부가 하나의 Brep이어도, 구간 밖 교차부의 폭만으로 거부하지 않습니다. 문서 원본은 분할하지 않으며 전체 입력에 기존 Bend를 적용합니다. 실제 구간 안의 붕괴는 계속 거부하고, 검사용 절단에 실패하면 원인을 표시합니다. [수정 내용과 확인 순서](MD/Bend_Limited_Bounds_Fix.md).
 
 Bend 전체를 선택하면 모든 입력과 박스가 함께 변환됩니다. 박스 행에서 **Select in Rhino** 또는 뷰포트의 내부 편집으로 들어가면 박스만 조작할 수 있습니다. Control Box는 선으로 표시하고, 일반 작업에서는 실제로 숨겨 원본과 함께 스냅 대상에서 제외합니다. Bake/Merge에는 굽힌 형상만 들어가며 제어 박스의 위치·크기는 바뀌지 않습니다. 복제는 박스와 설정까지 독립적으로 복제합니다.
 
@@ -267,6 +269,10 @@ Rhino 원본만 복사할 때는 별도 `Copy` 명령을 사용하며, Modifier 
 진단 로그는 메모리에만 유지되며 문서를 닫으면 사라집니다.
 
 ## 검증 현황
+
+2026-09-12 Release **0.15.4: Core 205 + 선택 정책·Eto/WPF UI 78 = 283 PASS**, 빌드 경고·오류 0개. Limited Bend에서 구간 밖 넓은 부분을 곡률 붕괴로 오판하는 검사를 수정했습니다. 실제 형상 회귀 검사 6개는 추가·컴파일했으나, 앞서 실패한 RhinoCore 호스트를 재실행하지 않아 **미실행**입니다. 사용자 모델의 실제 성공 여부는 [0.15.4 수정·화면 확인 기록](MD/Bend_Limited_Bounds_Fix.md)의 확인 대상입니다. [빌드 로그](artifacts/validation/0.15.4/release-build-2026-09-12.txt), [UI 검사 로그](artifacts/validation/0.15.4/ui-checks-2026-09-12.txt).
+
+2026-09-11 Release **0.15.3**: Release 빌드 경고·오류 0개, RhinoCore를 시작하지 않는 Eto/WPF 검사 전부 통과. 동일 행 반복 이벤트, 실제 persistent 선택 일치 여부, 선택 revision별 검볼 요청 1회 제한, stale 요청 폐기, 검볼 핸들 마우스 입력 보존을 확인하는 정책 검사 13개를 추가했습니다. 이 환경에서는 별도 RhinoCore 검증 호스트가 `COM E_FAIL`로 시작되지 않아 전체 native 회귀 검사를 다시 집계하지 않았습니다. 실제 Modifier 결과·원본·BasePlane·Bend Control Box의 검볼 이동·회전과 Rhino 명령 시작은 [0.15.3 검볼 수정 기록](MD/Gumball_Selection_Fix.md)의 화면 확인 대상입니다.
 
 2026-09-11 Release **0.15.2: Core 205 + Rhino·Eto/WPF 772 = 977 PASS**, 빌드 경고·오류 0개, 기존 headless Undo/Redo 제약 3 SKIP. 기존 Rhino 전체·하위 객체 선택, persistent 선택, Eto 다중 행 선택 및 전체 회귀 검사를 통과했습니다. 새 패널 자동 선택부터 검볼 표시까지의 실제 마우스 동작은 [패널 선택 확인 순서](MD/Panel_Selection_Smoke_Test.md)의 수동 확인 대상입니다. [빌드 로그](artifacts/validation/0.15.2/release-build-2026-09-11.txt), [전체 검사 로그](artifacts/validation/0.15.2/rhino-checks-2026-09-11.txt).
 
